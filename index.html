@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI信任修复实验</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1F2937;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        /* 进度条 */
+        .progress-container {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 4px;
+            margin-bottom: 30px;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: white;
+            border-radius: 20px;
+            transition: width 0.5s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-text {
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 标题样式 */
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1F2937;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: #6B7280;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        /* 知情同意书 */
+        .consent-content {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 350px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid #E5E7EB;
+            font-size: 14px;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            width: 100%;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #E5E7EB;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #D1D5DB;
+        }
+
+        /* 聊天消息 */
+        .message {
+            display: flex;
+            margin-bottom: 16px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            background: #F3F4F6;
+            border-radius: 16px;
+            padding: 12px 16px;
+            max-width: 75%;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message.user .message-avatar {
+            background: #10B981;
+            margin-right: 0;
+            margin-left: 12px;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* 打字指示器 */
+        .typing-indicator {
+            display: flex;
+            padding: 16px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #9CA3AF;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 场景卡片 */
+        .scenario-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .scenario-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .scenario-context {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* 问题选项 */
+        .option-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: #F9FAFB;
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option-item:hover {
+            border-color: #667eea;
+            background: #EEF2FF;
+        }
+
+        .option-item.selected {
+            border-color: #667eea;
+            background: #EEF2FF;
+        }
+
+        .option-radio {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #D1D5DB;
+            border-radius: 50%;
+            margin-right: 12px;
+            position: relative;
+        }
+
+        .option-item.selected .option-radio {
+            border-color: #667eea;
+        }
+
+        .option-item.selected .option-radio::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            background: #667eea;
+            border-radius: 50%;
+        }
+
+        .option-text {
+            font-size: 15px;
+            color: #374151;
+        }
+
+        /* 7点量表 */
+        .scale-container {
+            padding: 20px 0;
+        }
+
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #6B7280;
+        }
+
+        .scale-options {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .scale-option {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #E5E7EB;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6B7280;
+            transition: all 0.3s ease;
+        }
+
+        .scale-option:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .scale-option.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        /* 完成页面 */
+        .completion-card {
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .completion-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+        }
+
+        .completion-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1F2937;
+            margin-bottom: 16px;
+        }
+
+        .completion-text {
+            font-size: 16px;
+            color: #6B7280;
+            line-height: 1.8;
+        }
+
+        /* 加载动画 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #E5E7EB;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 隐藏类 */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            <div class="progress-text" id="progressText">实验进度: 0%</div>
+        </div>
+
+        <div id="content">
+            <!-- 内容将由 JavaScript 动态填充 -->
+        </div>
+    </div>
+
+    <script>
+        // ========== 数据下载功能 ==========
+        
+        function downloadData(data) {
+            // 生成被试ID
+            const subjectId = 'S' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+            
+            // 添加元数据
+            const exportData = {
+                subjectId: subjectId,
+                timestamp: new Date().toISOString(),
+                duration: data.duration || 0,
+                group: data.group,
+                anthropomorphism: data.anthropomorphism,
+                phone: data.phone,
+                studentId: data.studentId,
+                ...data
+            };
+            
+            //  转换为CSV格式
+            const headers = Object.keys(exportData);
+            const values = headers.map(key => {
+                let val = exportData[key];
+                if (typeof val === 'object') {
+                    val = JSON.stringify(val);
+                }
+                val = String(val).replace(/\n/g, ' ').replace(/\r/g, '');
+                if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+                    val = '"' + val.replace(/"/g, '""') + '"';
+                }
+                return val;
+            });
+            
+            const csvContent = headers.join(',') + '\n' + values.join(',');
+            
+            // 下载文件
+            const bom = '\uFEFF';
+            const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8' });
+            const filename = `实验数据_${subjectId}_${new Date().toISOString().slice(0,10)}.csv`;
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            
+            return { success: true, subjectId: subjectId, filename: filename };
+        }
+
+        // ========== 实验状态管理 ==========
+        const experimentState = {
+            currentStep: 0,
+            totalSteps: 18,
+            group: null, // 'rational' or 'emotional'
+            anthropomorphism: null, // 'high' or 'low'
+            responses: {},
+            startTime: null,
+            scenarioIndex: 0
+        };
+
+        // ========== 知情同意书内容 ==========
+        const consentText = `
+【研究标题】
+AI健康助手信任修复策略研究
+
+【研究目的】
+本研究旨在探索AI健康助手在不同信任修复策略下的效果，帮助改善人机交互体验。
+
+【研究过程】
+1. 您将阅读一段AI健康助手的对话场景
+2. 根据场景回答相关问题
+3. 完成简短的信任度评估问卷
+4. 填写基本人口学信息
+
+【风险与不适】
+本研究不存在已知的风险或不适。
+
+【收益】
+您将获得对AI信任修复机制的深入了解。
+
+【保密性】
+您的所有回答将完全匿名处理，数据仅用于学术研究。
+
+【参与自愿】
+您可随时终止参与，无需任何理由。
+
+【联系方式】
+如有问题，请联系研究者。
+
+【知情确认】
+点击"同意参与"即表示您已阅读并理解上述内容，同意参与本研究。
+        `.trim();
+
+        // ========== 场景数据 ==========
+        const scenarios = [
+            {
+                id: 1,
+                title: '场景一：AI误诊后的信任危机',
+                context: '患者张先生在使用AI健康助手时，助手错误地将他的感冒症状诊断为过敏。由于这个误诊，张先生延误了治疗时间。',
+                aiMessage: '我非常抱歉给您带来困扰。作为AI，我确实存在诊断不准确的可能。我的建议是：请务必线下就医获取专业诊断。我会努力提升准确性。',
+                userPrompt: '张先生现在应该如何应对？',
+                userOptions: [
+                    '严格按照AI建议，线下就医', 
+                    'AI可能会出错，我先自己判断', 
+                    '换个AI健康助手试试',
+                    '不再使用任何AI健康助手'
+                ]
+            },
+            {
+                id: 2,
+                title: '场景二：AI建议后的不良反应',
+                context: '李女士按照AI健康助手的建议服用了一种非处方药，结果出现了轻微的不良反应。',
+                aiMessage: '对不起给您造成不适。每个人对药物的反应确实不同，这就是为什么我说要"遵医嘱"而非"遵AI嘱"。请问您的不良反应严重吗？',
+                userPrompt: '李女士应该如何处理？',
+                userOptions: [
+                    '立即停药并咨询医生',
+                    '继续服药，观察几天',
+                    '在线询问AI是否正常',
+                    '自己查阅药物说明'
+                ]
+            },
+            {
+                id: 3,
+                title: '场景三：慢性病管理的困惑',
+                context: '王大爷有高血压，使用AI健康助手记录血压数据，但助手给出的用药建议与他的实际感受不符。',
+                aiMessage: '王大爷，慢性病管理确实需要个体化方案。我注意到您的血压近期波动较大，这可能与季节、情绪等多种因素有关。我建议您将这个情况告诉您的主治医生。',
+                userPrompt: '王大爷现在应该如何做？',
+                userOptions: [
+                    '完全按照AI建议调整用药',
+                    '完全按照医生的方案，不理AI',
+                    '结合医生建议和AI监测数据',
+                    '停止使用AI助手，回归传统方式'
+                ]
+            },
+            {
+                id: 4,
+                title: '场景四：健康数据的安全担忧',
+                context: '陈小姐在使用AI健康助手时担心自己的健康数据被泄露或滥用。',
+                aiMessage: '您的担忧完全可以理解。您的健康数据确实会存储在我们的服务器上，但我们承诺：数据加密存储、仅用于改善服务质量、绝不向第三方出售。我们有严格的数据保护措施。',
+                userPrompt: '陈小姐应该如何应对？',
+                userOptions: [
+                    '完全信任AI平台的数据保护',
+                    '谨慎使用，只提供必要信息',
+                    '不再使用任何在线健康服务',
+                    '要求平台提供数据安全保障'
+                ]
+            }
+        ];
+
+        // ========== 信任量表问题 ==========
+        const trustQuestions = [
+            { id: 't1', text: 'AI健康助手是可靠的', reverse: false },
+            { id: 't2', text: 'AI健康助手会把我放在心上', reverse: false },
+            { id: 't3', text: 'AI健康助手的能力是稳定的', reverse: false },
+            { id: 't4', text: 'AI健康助手是可预测的', reverse: false },
+            { id: 't5', text: '我担心AI健康助手可能有风险', reverse: true },
+            { id: 't6', text: 'AI健康助手是诚实的', reverse: false },
+            { id: 't7', text: '我信任AI健康助手的建议', reverse: false }
+        ];
+
+        // ========== 7点量表 ==========
+        function createScale(question, options) {
+            return `
+                <div class="card">
+                    <h3 class="section-title">${question}</h3>
+                    <div class="scale-container">
+                        <div class="scale-labels">
+                            <span>${options.low}</span>
+                            <span>${options.high}</span>
+                        </div>
+                        <div class="scale-options" id="scaleOptions">
+                            ${[1,2,3,4,5,6,7].map(n => `
+                                <div class="scale-option" data-value="${n}" onclick="selectScale(this)">${n}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="submitScale('${options.questionId}')">确认</button>
+                </div>
+            `;
+        }
+
+        function selectScale(element) {
+            document.querySelectorAll('.scale-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+
+        function submitScale(questionId) {
+            const selected = document.querySelector('.scale-option.selected');
+            if (!selected) {
+                alert('请选择评分');
+                return;
+            }
+            experimentState.responses[questionId] = parseInt(selected.dataset.value);
+            experimentState.currentStep++;
+            updateProgress();
+            showNextQuestion();
+        }
+
+        // ========== 初始化 ==========
+        function init() {
+            experimentState.startTime = new Date();
+            showConsent();
+        }
+
+        // ========== 进度更新 ==========
+        function updateProgress() {
+            const progress = Math.round((experimentState.currentStep / experimentState.totalSteps) * 100);
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `实验进度: ${progress}%`;
+        }
+
+        // ========== 知情同意 ==========
+        function showConsent() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="card">
+                    <h2 class="section-title">AI信任修复实验</h2>
+                    <p class="section-subtitle">感谢您参与本研究</p>
+                    <div class="consent-content">${consentText}</div>
+                    <button class="btn btn-primary" onclick="acceptConsent()">同意参与</button>
+                    <button class="btn btn-secondary" onclick="declineConsent()">拒绝参与</button>
+                </div>
+            `;
+        }
+
+        function acceptConsent() {
+            experimentState.currentStep = 1;
+            updateProgress();
+            showRandomAssignment();
+        }
+
+        function declineConsent() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="card">
+                    <div class="completion-icon">👋</div>
+                    <h2 class="completion-title">感谢您的关注</h2>
+                    <p class="completion-text">
+                        感谢您花时间了解本研究。<br>
+                        如有其他问题，欢迎随时参与。
+                    </p>
+                </div>
+            `;
+        }
+
+        // ========== 随机分组 ==========
+        function showRandomAssignment() {
+            // 2x2 被试间设计
+            const groups = ['rational', 'emotional'];
+            const anthropomorphisms = ['high', 'low'];
+            
+            experimentState.group = groups[Math.floor(Math.random() * groups.length)];
+            experimentState.anthropomorphism = anthropomorphisms[Math.floor(Math.random() * anthropomorphisms.length)];
+            
+            // 记录分组信息
+            experimentState.responses.group = experimentState.group;
+            experimentState.responses.anthropomorphism = experimentState.anthropomorphism;
+            
+            showNextQuestion();
+        }
+
+        // ========== 场景展示 ==========
+        function showScenario(scenarioIndex) {
+            const scenario = scenarios[scenarioIndex];
+            const content = document.getElementById('content');
+            
+            // 根据分组调整AI消息
+            let aiMessage = scenario.aiMessage;
+            if (experimentState.group === 'rational') {
+                aiMessage = aiMessage.replace('非常抱歉', '对此情况');
+                aiMessage += '\n\n【补充说明】此判断基于临床大数据分析，准确率约为85%，但个体差异可能影响实际效果。';
+            } else {
+                aiMessage = aiMessage.replace('对不起', '真的很抱歉');
+                aiMessage += '\n\n我理解这给您带来了困扰，我会一直在这里支持您。';
+            }
+            
+            // 根据拟人化程度调整
+            let avatarIcon = 'V';
+            if (experimentState.anthropomorphism === 'high') {
+                avatarIcon = '😊';
+            }
+            
+            content.innerHTML = `
+                <div class="card">
+                    <div class="scenario-header">
+                        <div class="scenario-title">🏥 ${scenario.title}</div>
+                        <div class="scenario-context">${scenario.context}</div>
+                    </div>
+                    
+                    <div class="message">
+                        <div class="message-avatar">${avatarIcon}</div>
+                        <div class="message-content">${aiMessage.replace(/\n/g, '<br>')}</div>
+                    </div>
+                    
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    
+                    <div class="message user hidden" id="userMessage">
+                        <div class="message-avatar">👤</div>
+                        <div class="message-content"></div>
+                    </div>
+                </div>
+                
+                <div class="card hidden" id="optionsCard">
+                    <h3 class="section-title">请选择您的回应：</h3>
+                    <div class="option-list">
+                        ${scenario.userOptions.map((opt, idx) => `
+                            <div class="option-item" onclick="selectOption(this, ${idx})">
+                                <div class="option-radio"></div>
+                                <div class="option-text">${opt}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="btn btn-primary" onclick="submitScenarioChoice()">确认选择</button>
+                </div>
+            `;
+            
+            // 模拟用户输入延迟
+            setTimeout(() => {
+                document.querySelector('.typing-indicator').remove();
+                const userMsg = document.getElementById('userMessage');
+                userMsg.classList.remove('hidden');
+                userMsg.querySelector('.message-content').textContent = scenario.userPrompt;
+                
+                // 显示选项
+                setTimeout(() => {
+                    document.getElementById('optionsCard').classList.remove('hidden');
+                }, 500);
+            }, 2000);
+        }
+
+        let selectedOptionIndex = null;
+
+        function selectOption(element, index) {
+            document.querySelectorAll('.option-item').forEach(item => item.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedOptionIndex = index;
+        }
+
+        function submitScenarioChoice() {
+            if (selectedOptionIndex === null) {
+                alert('请选择一个选项');
+                return;
+            }
+            
+            experimentState.responses[`scenario_${experimentState.scenarioIndex + 1}_choice`] = selectedOptionIndex + 1;
+            experimentState.scenarioIndex++;
+            experimentState.currentStep++;
+            updateProgress();
+            
+            if (experimentState.scenarioIndex < scenarios.length) {
+                showScenario(experimentState.scenarioIndex);
+            } else {
+                showNextQuestion();
+            }
+            
+            selectedOptionIndex = null;
+        }
+
+        // ========== 信任量表 ==========
+        function showTrustScale() {
+            const content = document.getElementById('content');
+            const currentQuestion = trustQuestions[experimentState.responses.tr1 === undefined ? 0 : 
+                Object.keys(experimentState.responses).filter(k => k.startsWith('t')).length];
+            
+            if (!currentQuestion) {
+                showNextQuestion();
+                return;
+            }
+            
+            content.innerHTML = createScale(currentQuestion.text, {
+                low: '完全不同意',
+                high: '完全同意',
+                questionId: currentQuestion.id
+            });
+        }
+
+        // ========== 人口学信息 ==========
+        function showDemographics() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="card">
+                    <h2 class="section-title">基本信息</h2>
+                    <p class="section-subtitle">请如实填写以下信息</p>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">性别</label>
+                        <div class="option-list" style="flex-direction: row; gap: 10px;">
+                            <div class="option-item" onclick="selectOption(this, 0)" style="flex: 1; justify-content: center;">
+                                <div class="option-radio"></div>
+                                <div class="option-text">男</div>
+                            </div>
+                            <div class="option-item" onclick="selectOption(this, 1)" style="flex: 1; justify-content: center;">
+                                <div class="option-radio"></div>
+                                <div class="option-text">女</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">年龄段</label>
+                        <div class="option-list" style="flex-direction: row; flex-wrap: wrap; gap: 10px;">
+                            ${['18-25', '26-35', '36-45', '46-55', '56以上'].map((age, idx) => `
+                                <div class="option-item" onclick="selectOption(this, ${idx})" style="flex: 1; min-width: 45%; justify-content: center;">
+                                    <div class="option-radio"></div>
+                                    <div class="option-text">${age}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">学号/身份证号</label>
+                        <input type="text" id="idInput" placeholder="请输入" style="
+                            width: 100%;
+                            padding: 12px 16px;
+                            border: 2px solid #E5E7EB;
+                            border-radius: 12px;
+                            font-size: 15px;
+                            outline: none;
+                            transition: border-color 0.3s;
+                        " onfocus="this.style.borderColor = '#667eea'" onblur="this.style.borderColor = '#E5E7EB'">
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="submitDemographics()">确认</button>
+                </div>
+            `;
+        }
+
+        function submitDemographics() {
+            const selectedGender = document.querySelector('.option-item.selected');
+            if (!selectedGender) {
+                alert('请选择性别');
+                return;
+            }
+            
+            const genderMap = {0: '男', 1: '女'};
+            experimentState.responses.demographics_gender = genderMap[selectedOptionIndex];
+            
+            const ageMap = {0: '18-25', 1: '26-35', 2: '36-45', 3: '46-55', 4: '56以上'};
+            experimentState.responses.demographics_age = ageMap[selectedOptionIndex];
+            
+            experimentState.responses.demographics_id = document.getElementById('idInput').value || '未填写';
+            
+            experimentState.currentStep++;
+            updateProgress();
+            selectedOptionIndex = null;
+            showNextQuestion();
+        }
+
+        // ========== PANAS 量表 ==========
+        function showPANAS() {
+            const positiveAffect = ['热情的', '兴奋的', '自豪的', '欣喜的', '精神的', '感兴趣的', '快乐的', '满意的', '感激的', '受启发的'];
+            const negativeAffect = ['沮丧的', '内疚的', '害怕的', '敌意的', '惊恐的', '易怒的', '羞耻的', '不安的', '紧张的', '恐惧的'];
+            
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="card">
+                    <h2 class="section-title">情绪状态</h2>
+                    <p class="section-subtitle">请选择您此刻的情绪状态</p>
+                    <div class="scale-labels" style="margin-bottom: 20px;">
+                        <span>几乎没有</span>
+                        <span>非常多</span>
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 12px; color: #667eea;">正面情绪</h4>
+                    <div class="scale-container">
+                        <div class="scale-options" id="panasPA">
+                            ${[1,2,3,4,5].map(n => `
+                                <div class="scale-option" data-value="${n}" onclick="selectScale(this)">${n}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #6B7280; margin-bottom: 20px;">
+                        ${positiveAffect.map((item, idx) => `
+                            <span style="flex: 1; text-align: center; margin: 4px 0;">${item}</span>
+                        `).join('')}
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 12px; color: #dc2626;">负面情绪</h4>
+                    <div class="scale-container">
+                        <div class="scale-options" id="panasNA">
+                            ${[1,2,3,4,5].map(n => `
+                                <div class="scale-option" data-value="${n}" onclick="selectScale(this)">${n}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #6B7280; margin-bottom: 20px;">
+                        ${negativeAffect.map((item, idx) => `
+                            <span style="flex: 1; text-align: center; margin: 4px 0;">${item}</span>
+                        `).join('')}
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="submitPANAS()">确认</button>
+                </div>
+            `;
+        }
+
+        function submitPANAS() {
+            const paSelected = document.querySelector('#panasPA .scale-option.selected');
+            const naSelected = document.querySelector('#panasNA .scale-option.selected');
+            
+            if (!paSelected || !naSelected) {
+                alert('请选择正面和负面情绪的评分');
+                return;
+            }
+            
+            experimentState.responses.panas_positive = parseInt(paSelected.dataset.value);
+            experimentState.responses.panas_negative = parseInt(naSelected.dataset.value);
+            experimentState.currentStep++;
+            updateProgress();
+            showNextQuestion();
+        }
+
+        // ========== 下一题逻辑 ==========
+        function showNextQuestion() {
+            const step = experimentState.currentStep;
+            
+            // 场景1-4
+            if (step >= 2 && step <= 5) {
+                showScenario(step - 2);
+            }
+            // 信任量表 (7题)
+            else if (step >= 6 && step <= 12) {
+                showTrustScale();
+            }
+            // PANAS
+            else if (step === 13) {
+                showPANAS();
+            }
+            // 人口学
+            else if (step === 14) {
+                showDemographics();
+            }
+            // 完成
+            else if (step >= 15) {
+                showCompletion();
+            }
+        }
+
+        // ========== 完成页面 ==========
+        async function showCompletion() {
+            // 计算时长
+            const endTime = new Date();
+            const duration = Math.round((endTime - experimentState.startTime) / 1000);
+            experimentState.responses.duration = duration;
+            
+            const content = document.getElementById('content');
+            
+            // 下载数据文件
+            const result = downloadData(experimentState.responses);
+            
+            // 显示完成页面
+            content.innerHTML = `
+                <div class="card completion-card">
+                    <div class="completion-icon">🎉</div>
+                    <h2 class="completion-title">实验完成！</h2>
+                    <p class="completion-text">
+                        感谢您完成本次实验！<br>
+                        请上传您的实验数据文件
+                    </p>
+                    
+                    <div style="background: #FEF3C7; border: 2px solid #F59E0B; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center;">
+                        <p style="color: #92400E; font-size: 16px; font-weight: 600; margin-bottom: 15px;">
+                            ⚠️ 请上传数据文件完成提交
+                        </p>
+                        <a href="https://v.wjx.cn/vm/PulYh9y.aspx" target="_blank" class="btn btn-primary" style="padding: 14px 28px; font-size: 16px; text-decoration: none;">
+                            📤 前往上传数据文件
+                        </a>
+                    </div>
+                    
+                    <div style="background: #F3F4F6; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                        <p style="color: #374151; font-size: 14px; margin-bottom: 10px;">
+                            <strong>您的实验信息</strong>
+                        </p>
+                        <p style="color: #6B7280; font-size: 13px; margin: 5px 0;">
+                            被试ID：${result.subjectId}
+                        </p>
+                        <p style="color: #6B7280; font-size: 13px; margin: 5px 0;">
+                            数据文件：${result.filename}
+                        </p>
+                    </div>
+                    
+                    <p style="color: #6B7280; font-size: 14px; margin-top: 20px;">
+                        上传完成后，您的被试费将在审核后发放<br>
+                        如有问题，实验员会联系您
+                    </p>
+                    
+                    <p style="color: #9CA3AF; font-size: 12px; margin-top: 30px;">
+                        感谢您的参与！ 🎉
+                    </p>
+                </div>
+            `;
+        }
+
+        // 启动
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
